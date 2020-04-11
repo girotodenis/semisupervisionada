@@ -53,10 +53,11 @@ class CellQ:
         self.values[self.indexActions] = self.value
         
     def __str__(self):
-        return "cell:{0} value: {1}, top: {2}, down: {3}, right: {4}, left: {5}".format(self.cell, self.value, self.values[0], self.values[1],self.values[2],self.values[3])
+        #return "cell:{0} value: {1}, top: {2}, down: {3}, right: {4}, left: {5}".format(self.cell, self.value, self.values[0], self.values[1],self.values[2],self.values[3])
+        return "cell:{0} value: {1}".format(self.cell, self.value)
 
 
-def qlearning(epsilon = 0.1, iterations = 1000):
+def qlearning(epsilon = 0.1, iterations = 10000):
     
     # parameters
     gamma = 0.1 
@@ -77,10 +78,13 @@ def qlearning(epsilon = 0.1, iterations = 1000):
 
     for it in range(iterations):
         s = generateInitialState(states)
-
-        t = 0    
-        while t < 100:
-            t += 1
+        
+        if it in [50, 100, 500, iterations-1]:
+            print("\nIteration {}".format(it))
+            print([str(Q[r, c]) for r in range(grid_size) for c in range(grid_size)])
+            print("")
+            
+        while True:
             current_cell = Q[s]
             
             #print(current_cell)
@@ -100,7 +104,7 @@ def qlearning(epsilon = 0.1, iterations = 1000):
             
             s = final_state
     
-    all_series = [list(x)[:50] for x in deltas.values()]
+    all_series = [list(x)[:100] for x in deltas.values()]
     return all_series
 
         
