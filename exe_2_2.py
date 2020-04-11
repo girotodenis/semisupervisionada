@@ -24,7 +24,7 @@ def takeAction(state, action, terminal_states, grid_size, reward_value):
         final_state = state
     return reward_value, tuple(final_state)
 
-class Cell:
+class CellQ:
     def __init__(self, actions, row, col):
         self.cell = (row, col)
         self.value = 0
@@ -49,14 +49,14 @@ class Cell:
         return action
     
     def learn(self, alpha, reward_value, gamma, cell_final_state ):
-        self.value += alpha * (reward_value + gamma * cell_final_state.value - self.value)
+        self.value += alpha * (reward_value + gamma * np.max(cell_final_state.values) - self.value)
         self.values[self.indexActions] = self.value
         
     def __str__(self):
         return "cell:{0} value: {1}, top: {2}, down: {3}, right: {4}, left: {5}".format(self.cell, self.value, self.values[0], self.values[1],self.values[2],self.values[3])
 
 
-def sarsa(epsilon = 0.1, iterations = 1000):
+def qlearning(epsilon = 0.1, iterations = 1000):
     
     # parameters
     gamma = 0.1 
@@ -66,7 +66,7 @@ def sarsa(epsilon = 0.1, iterations = 1000):
     terminal_states = [[0,0], [grid_size-1, grid_size-1]]
     actions = [[-1, 0], [1, 0], [0, 1], [0, -1]]
     
-    tmp = [[Cell(actions,row,col) for row in range(grid_size)] for col in range(grid_size)]
+    tmp = [[CellQ(actions,row,col) for row in range(grid_size)] for col in range(grid_size)]
     Q = np.array(tmp)
     #Q = np.zeros((grid_size, grid_size))
     
@@ -78,9 +78,9 @@ def sarsa(epsilon = 0.1, iterations = 1000):
     for it in range(iterations):
         s = generateInitialState(states)
 
-            
-        while True:
-            
+        t = 0    
+        while t < 100:
+            t += 1
             current_cell = Q[s]
             
             #print(current_cell)
@@ -105,6 +105,6 @@ def sarsa(epsilon = 0.1, iterations = 1000):
 
         
 plt.figure(figsize=(20,10))
-all_series = sarsa()#[list(x)[:50] for x in deltas.values()]
+all_series = qlearning()#[list(x)[:50] for x in deltas.values()]
 for series in all_series:
     plt.plot(series)
