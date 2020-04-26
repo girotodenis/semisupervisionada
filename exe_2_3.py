@@ -3,6 +3,25 @@
 """
 Created on Sat Apr 11 10:29:42 2020
 
+https://web.stanford.edu/class/psych209/Readings/SuttonBartoIPRLBook2ndEd.pdf
+
+Exemplo 6.5: Mundo da grade ventoso A Figura 6.10 mostra um mundo da grade padrão, 
+com estados de início e objetivo, mas com uma diferença: existe um vento cruzado para cima no meio da grade. 
+As ações são as quatro padrão - cima, baixo, direita e esquerda - mas na região central os próximos estados 
+resultantes são deslocados para cima por um "vento", cuja força varia de coluna para coluna. 
+A força do vento é dada abaixo de cada coluna, em número de células 
+deslocadas SG 0 0 0 1 1 1 2 2 1 0 movimentos padrão dos movimentos do rei 
+Figura 6.10: Mundo da grade no qual o movimento é alterado por um dependente da localização, ascendente "vento".
+
+
+
+341/5000
+Exercício 6.6: Mundo da Grade Ventoso com Movimentos do Rei 
+Resolva a tarefa do mundo da grade ventoso assumindo oito ações possíveis, 
+incluindo os movimentos diagonais, em vez das quatro usuais. 
+Quanto melhor você pode fazer com as ações extras? 
+Você pode se sair melhor incluindo uma nona ação que não causa nenhum movimento além daquele causado pelo vento?
+
 @author: dgiroto
 """
 
@@ -11,115 +30,105 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import random
 
-def generateInitialState(states):
-    initial_state = random.choice(states[1:-1])
-    return tuple(initial_state)
-           
 
-def takeAction(state, action, terminal_states, grid_size, reward_value):
-    if list(state) in terminal_states:
-        return 0, None
-    final_state = np.array(state) + np.array(action)
-    if -1 in list(final_state) or grid_size in list(final_state):
-        final_state = state
-    return reward_value, tuple(final_state)
-
-class CellQ:
-    def __init__(self, actions, row, col):
-        self.cell = (row, col)
-        self.value = 0
-        self.values = [0 for a in actions];
-        self.indexActions = -1;
+class Mundo:
+    
+    def __init__(self):
+         
+        self.row = 10 
+        self.col = 10
         
-    def epsilon_greedy(self, epsilon, actions ):
-        p = np.random.random()
-        if (p < epsilon):
-            return self.explore(actions)
-        else:
-            return self.exploit(actions)   
-    
-    def exploit(self, actions):
-        self.indexActions = self.values.index(max(self.values))
-        action = actions[self.indexActions]
-        return action
- 
-    def explore(self, actions):
-        action = random.choice(actions);
-        self.indexActions = actions.index(action)
-        return action
-    
-    def learn(self, alpha, reward_value, gamma, cell_final_state ):
-        self.value += alpha * (reward_value + gamma * np.max(cell_final_state.values) - self.value)
-        self.values[self.indexActions] = self.value
+        self.cardeais = [
+                 'N',
+            'O',     'L',
+                 'S']
+        self.actions = [  
+                         (-1, 0),
+                (0, -1),          (0, 1),
+                         (1,  0)
+            ]
         
-    def __str__(self):
-        #return "cell:{0} value: {1}, top: {2}, down: {3}, right: {4}, left: {5}".format(self.cell, self.value, self.values[0], self.values[1],self.values[2],self.values[3])
-        return "cell:{0} value: {1}".format(self.cell, self.value)
-
-
-def qlearning(epsilon = 0.1, iterations = 10000):
-    
-    # parameters
-    gamma = 0.1 
-    reward_value = -1
-    grid_size = 4
-    alpha = 0.1 
-    terminal_states = [[0,0], [grid_size-1, grid_size-1]]
-    actions = [  [-1,-1], [0, -1], [1,-1],
-                 [-1, 0],          [0, 1],
-                 [-1, 1], [1,  0], [1,1]
-              ]
-    
-    tmp = [[CellQ(actions,row,col) for row in range(grid_size)] for col in range(grid_size)]
-    Q = np.array(tmp)
-    #Q = np.zeros((grid_size, grid_size))
-    
-    returns = {(i, j):list() for i in range(grid_size) for j in range(grid_size)}
-    deltas = {(i, j):list() for i in range(grid_size) for j in range(grid_size)}
-    states = [[i, j] for i in range(grid_size) for j in range(grid_size)]
-
-
-    for it in range(iterations):
-        s = generateInitialState(states)
+        #self.cardeais = [
+        #    'NO','N','NE',
+        #    'O',     'L',
+        #    'SO','S','SE']
+        #self.actions = [  
+        #        (-1, -1), (-1, 0), (-1, 1),
+        #        ( 0, -1),          ( 0, 1),
+        #        ( 1,  1), ( 1, 0), ( 1, 1)
+        #    ]
         
-        if it in [50, 100, 500, iterations-1]:
-            print("\nIteration {}".format(it))
-            print([str(Q[r, c]) for r in range(grid_size) for c in range(grid_size)])
-            print("")
-            
-        while True:
-            current_cell = Q[s]
-            
-            #print(current_cell)
-            
-            action = current_cell.epsilon_greedy(epsilon, actions)
-            reward, final_state = takeAction(s, action, terminal_states, grid_size, reward_value)
-            
-            if final_state is None:
-                break
-            
-            next_cell =  Q[final_state]
-            old_cell_value = current_cell.value
-            #Q[s] += alpha * (reward_value + gamma * Q[final_state] - Q[s])
-            current_cell.learn(alpha, reward, gamma, next_cell )
-           
-            deltas[s].append(float(np.abs(old_cell_value - current_cell.value)))
-            
-            s = final_state
+        self.forca_vento_coluna = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]
+        
+        tmp = [[ (row, col) for row in range(self.row)] for col in range(self.col)]
+        self.grade = np.array(tmp)
+        
+        self.inicio = (5, 0)
+        self.fim =    (5, 7)
+        
+    def is_inicio(self, posicao):
+        return posicao[0] == self.inicio[0] and posicao[1] == self.inicio[1]
     
-    all_series = [list(x)[:100] for x in deltas.values()]
-    return all_series
+    def is_fim(self, posicao):
+        return posicao[0] == self.fim[0] and posicao[1] == self.fim[1]
+    
+    def cardeal_to_action(self, cardeal):
+        indexes = [i for i,x in enumerate(self.cardeais) if x == cardeal]
+        return self.actions[indexes[0]]
+    
+    def action_to_cardeal(self, action):
+        indexes = [i for i,x in enumerate(self.actions) if x == action]
+        return self.cardeais[indexes[0]]
+        
+    def mover(self, origem, movimento):
+        
+        destino = np.array(origem) + np.array(movimento)
+        
+        if -1 in list(destino) or self.col in list(destino):
+            return None, self.is_inicio(destino), self.is_fim(destino)
+        
+        coluna_destino = destino[1]
+        forca_vento = self.forca_vento_coluna[coluna_destino]
+        
+        if forca_vento > 0:
+            for it in range(forca_vento):
+                destino = np.array(destino) + np.array(self.cardeal_to_action('N'))
+                if -1 in list(destino) or self.col in list(destino):
+                    return None, self.is_inicio(destino), self.is_fim(destino)
+        
+        return tuple(destino), self.is_inicio(destino), self.is_fim(destino)
+
 
         
-plt.figure(figsize=(20,10))
-all_series = qlearning()#[list(x)[:50] for x in deltas.values()]
-for series in all_series:
-    plt.plot(series)
+m = Mundo()      
+caminho = 'L'
+print(caminho,' = ', m.cardeal_to_action(caminho))
+print('(1,0) = ', m.action_to_cardeal((1,0)))
+
+tmp = [[ '_' for row in range(m.row)] for col in range(m.col)]
+tmp = np.array(tmp)
+tmp[m.inicio] = 'i'
+tmp[m.fim] = 'f'
+
+posicao, inicio, fim = (m.inicio, True, False)
+
+for it in range(3):
+    posicao, inicio, fim = m.mover(posicao, m.cardeal_to_action('S'))
+    print(posicao)
+    tmp[posicao] = 'S'
+
+for it in range(9):
+    posicao, inicio, fim = m.mover(posicao, m.cardeal_to_action('L'))
+    print(posicao)
+    tmp[posicao] ='L'
+
+for it in range(8):
+    posicao, inicio, fim = m.mover(posicao, m.cardeal_to_action('S'))
+    tmp[posicao] = 'S'
     
-    
-    ['cell:(0, 0) value: 0', 
-     'cell:(1, 0) value: -1.003758879778791', 
-     'cell:(2, 0) value: -1.1014623595996222', 
-     'cell:(3, 0) value: -1.1103221019196563', 
-     'cell:(0, 1) value: -1.0049378404016134', 'cell:(1, 1) value: -1.0348124990539112', 'cell:(2, 1) value: -1.101941575455298', 'cell:(3, 1) value: -1.1019039333951175', 'cell:(0, 2) value: -1.1038513450805176', 'cell:(1, 2) value: -1.1021937365011136', 'cell:(2, 2) value: -1.0077459893050682', 'cell:(3, 2) value: -1.0013078076922939', 'cell:(0, 3) value: -1.1102884080803295', 'cell:(1, 3) value: -1.1039090543851522', 'cell:(2, 3) value: -1.0390408801673465', 'cell:(3, 3) value: 0']
-    
+for it in range(2):
+    posicao, inicio, fim = m.mover(posicao, m.cardeal_to_action('O'))
+    tmp[posicao] = 'O'
+
+print(fim)
+print(tmp)
