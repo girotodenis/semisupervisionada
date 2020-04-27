@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 import random
 
 def generateInitialState(states):
-    initial_state = random.choice(states[1:-1])
+    ss = states[1:-1]
+    initial_state = random.choice(ss)
     return tuple(initial_state)
            
 

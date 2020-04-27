@@ -38,7 +38,7 @@ class Mundo:
         self.row = 10 
         self.col = 10
         
-        self.cardeais = [
+        self.pcardeais = [
                  'N',
             'O',     'L',
                  'S']
@@ -48,7 +48,7 @@ class Mundo:
                          (1,  0)
             ]
         
-        #self.cardeais = [
+        #self.pcardeais = [
         #    'NO','N','NE',
         #    'O',     'L',
         #    'SO','S','SE']
@@ -60,11 +60,12 @@ class Mundo:
         
         self.forca_vento_coluna = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]
         
-        tmp = [[ (row, col) for row in range(self.row)] for col in range(self.col)]
-        self.grade = np.array(tmp)
+        self.grade = [ (row, col) for row in range(self.row) for col in range(self.col)]
         
         self.inicio = (5, 0)
         self.fim =    (5, 7)
+        
+        self.movimentos = []
         
     def is_inicio(self, posicao):
         return posicao[0] == self.inicio[0] and posicao[1] == self.inicio[1]
@@ -72,63 +73,101 @@ class Mundo:
     def is_fim(self, posicao):
         return posicao[0] == self.fim[0] and posicao[1] == self.fim[1]
     
-    def cardeal_to_action(self, cardeal):
-        indexes = [i for i,x in enumerate(self.cardeais) if x == cardeal]
+    def pcardeal_to_action(self, pcardeal):
+        indexes = [i for i,x in enumerate(self.pcardeais) if x == pcardeal]
         return self.actions[indexes[0]]
     
-    def action_to_cardeal(self, action):
+    def action_to_pcardeal(self, action):
         indexes = [i for i,x in enumerate(self.actions) if x == action]
-        return self.cardeais[indexes[0]]
+        return self.pcardeais[indexes[0]]
         
     def mover(self, origem, movimento):
         
         destino = np.array(origem) + np.array(movimento)
         
         if -1 in list(destino) or self.col in list(destino):
-            return None, self.is_inicio(destino), self.is_fim(destino)
+            self.movimentos.append( (None, self.action_to_pcardeal(movimento), self.is_inicio(destino), self.is_fim(destino))  )
+            return self.movimentos[-1]
         
         coluna_destino = destino[1]
         forca_vento = self.forca_vento_coluna[coluna_destino]
         
         if forca_vento > 0:
             for it in range(forca_vento):
-                destino = np.array(destino) + np.array(self.cardeal_to_action('N'))
+                destino = np.array(destino) + np.array(self.pcardeal_to_action('N'))
                 if -1 in list(destino) or self.col in list(destino):
-                    return None, self.is_inicio(destino), self.is_fim(destino)
+                    self.movimentos.append( (None, self.action_to_pcardeal(movimento), self.is_inicio(destino), self.is_fim(destino)) )
+                    return self.movimentos[-1]
         
-        return tuple(destino), self.is_inicio(destino), self.is_fim(destino)
-
-
-        
-m = Mundo()      
-caminho = 'L'
-print(caminho,' = ', m.cardeal_to_action(caminho))
-print('(1,0) = ', m.action_to_cardeal((1,0)))
-
-tmp = [[ '_' for row in range(m.row)] for col in range(m.col)]
-tmp = np.array(tmp)
-tmp[m.inicio] = 'i'
-tmp[m.fim] = 'f'
-
-posicao, inicio, fim = (m.inicio, True, False)
-
-for it in range(3):
-    posicao, inicio, fim = m.mover(posicao, m.cardeal_to_action('S'))
-    print(posicao)
-    tmp[posicao] = 'S'
-
-for it in range(9):
-    posicao, inicio, fim = m.mover(posicao, m.cardeal_to_action('L'))
-    print(posicao)
-    tmp[posicao] ='L'
-
-for it in range(8):
-    posicao, inicio, fim = m.mover(posicao, m.cardeal_to_action('S'))
-    tmp[posicao] = 'S'
+        self.movimentos.append( (tuple(destino), self.action_to_pcardeal(movimento), self.is_inicio(destino), self.is_fim(destino)) )
+        return  self.movimentos[-1]
     
-for it in range(2):
-    posicao, inicio, fim = m.mover(posicao, m.cardeal_to_action('O'))
-    tmp[posicao] = 'O'
+    def limpar_caminho_realizaso(self):
+        self.movimentos = []
+        
+    def caminho_realizaso(self):
+        tmp = [[ '_' for row in range(self.row)] for col in range(self.col)]
+        tmp = np.array(tmp)
+        tmp[self.inicio] = 'i'
+        tmp[self.fim] = 'f'
+        movs = []
+        for mov in self.movimentos:
+            movs.append(mov[1])
+            tmp[mov[0]] = mov[1]
+        print(tmp)
+        return movs, self.movimentos[-1][3]
 
-print(fim)
-print(tmp)
+    def teste(self):
+        posicao, movimento, inicio, fim = (self.inicio,'i', True, False)
+        for it in range(3):
+            posicao, movimento, inicio, fim = self.mover(posicao, self.pcardeal_to_action('S'))
+        for it in range(9):
+            posicao, movimento, inicio, fim = self.mover(posicao, self.pcardeal_to_action('L'))
+        for it in range(8):
+            posicao, movimento, inicio, fim = self.mover(posicao, self.pcardeal_to_action('S'))
+        for it in range(2):
+            posicao, movimento, inicio, fim = self.mover(posicao, self.pcardeal_to_action('O'))
+        print(self.caminho_realizaso())
+
+
+
+class Rei:
+    def __init__(self):
+        
+        self.gamma = 0.1 
+        self.reward_value = -1
+        self.alpha = 0.1 
+        self.epsilon = 0.1 
+        self.iterations = 1000
+        
+        
+    def learn(self, mundo):
+        
+        deltas = {(row, col):list() for row in range(mundo.row) for col in range(mundo.col)}
+        
+        for it in range(self.iterations):
+
+            s = tuple(random.choice(mundo.grade))
+            
+            
+            
+           
+    
+        
+       # all_series = [list(x)[:50] for x in deltas.values()]
+        return mundo.caminho_realizaso(), []#all_series
+        
+        
+       
+#Mundo().teste()      
+
+
+mundo = Mundo() 
+rei = Rei()
+melhor_caminho = rei.learn(mundo)
+print(melhor_caminho[0])
+
+plt.figure(figsize=(20,10))
+all_series = melhor_caminho[1]
+for series in all_series:
+    plt.plot(series)
