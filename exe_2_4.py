@@ -166,7 +166,8 @@ class Cell:
     
     def learn(self, alpha, reward_value, gamma, cell_final_state ):
         #self.value += alpha * (reward_value + gamma * cell_final_state.value - self.value)
-        self.value += alpha * (reward_value + gamma * cell_final_state.values[self.indexActions] - self.value)
+        #self.value += alpha * (reward_value + gamma * cell_final_state.values[self.indexActions] - self.value)
+        self.value += alpha * (reward_value + gamma * np.max(cell_final_state.values) - self.value)
         self.values[self.indexActions] = self.value
 
 class Rei:
